@@ -164,11 +164,17 @@ class HoyolabClient(ApiClient):
 
         logging.info("Fetch account detail from Hoyoverse ...")
         info_res = self._request(f"{data['info_url']}?act_id={act_id}")
+        if not info_res or info_res.get("data") is None:
+            logging.warning(f"Skipped {account.get_nickname()} ({data['game_name']}): Hoyolab returned {info_res.get('retcode') if info_res else None} {info_res.get('message') if info_res else 'no response'}")
+            return
         if not self._check_json_format(info_res, data["info_url"], ["data"]):
             return
 
         logging.info("Fetch daily login reward from Hoyoverse ..")
         rewards_res = self._request(f"{data['reward_url']}?act_id={act_id}")
+        if not rewards_res or rewards_res.get("data") is None:
+            logging.warning(f"Skipped {account.get_nickname()} ({data['game_name']}): Hoyolab returned {rewards_res.get('retcode') if rewards_res else None} {rewards_res.get('message') if rewards_res else 'no response'}")
+            return
         if not self._check_json_format(rewards_res, data["reward_url"], ["data", ["awards"]]):
             return
 
@@ -240,6 +246,7 @@ def run():
     webhook_url = os.environ.get("DISCORD_WEBHOOK")
 
     cookies = cookie.split('#')
+    invalid_accounts = []
 
     for i, cookie in enumerate(cookies):
         logging.info(f"Processing account {i + 1} of {len(cookies)}")
@@ -250,6 +257,7 @@ def run():
             client.verify_cookie()
         except Exception as e:
             logging.error(f"Invalid cookie for account {i + 1}: {e}")
+            invalid_accounts.append(i + 1)
             continue
 
         try:
@@ -258,5 +266,8 @@ def run():
         except Exception as e:
             logging.error(f"Check-in failed: {e}")
             continue
+
+    if invalid_accounts:
+        raise SystemExit(f"Cookie expired or invalid for account(s) {invalid_accounts}. Please update the COOKIE secret.")
 
 run()
