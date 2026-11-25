@@ -29,6 +29,7 @@ GAME_DATA = {
         "game_name": "Zenless Zone Zero",
         "main": "Proxy",
         "act_id": "e202406031448091",
+        "signgame": "zzz",
         "info_url": "https://sg-act-nap-api.hoyolab.com/event/luna/zzz/os/info",
         "reward_url": "https://sg-act-nap-api.hoyolab.com/event/luna/zzz/os/home",
         "sign_url": "https://sg-act-nap-api.hoyolab.com/event/luna/zzz/os/sign"
@@ -161,6 +162,11 @@ class HoyolabClient(ApiClient):
 
         data = GAME_DATA[account.get_game_biz()]
         act_id = data["act_id"]
+
+        if data.get("signgame"):
+            self.headers["x-rpc-signgame"] = data["signgame"]
+        else:
+            self.headers.pop("x-rpc-signgame", None)
 
         logging.info("Fetch account detail from Hoyoverse ...")
         info_res = self._request(f"{data['info_url']}?act_id={act_id}")
